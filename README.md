@@ -32,7 +32,7 @@ Tune the digest with:
 ```env
 SUMMARY_INTERVAL_HOURS=3
 SUMMARY_TOP_N=5
-LEAD_PREFERENCES=Recommend small paid web projects from free-contact sources worth replying to quickly. Prefer presentation websites, portfolios, landing pages, WordPress, simple CMS, booking systems, and clear client requests. Avoid e-shops, Shoptet, SEO-only work, graphics-only work, full-time jobs, and listings where contacting the client requires a paid credit or subscription.
+LEAD_PREFERENCES=Recommend paid custom website projects from free-contact sources. Prefer people who clearly want a website, full custom web, presentation website, business website, landing page, or simple portfolio. Reject WordPress, WP, e-shops, Shoptet, SEO-only work, graphics-only work, full-time jobs, and listings where contacting the client requires a paid credit or subscription. Prefer good budgets, but accept lower payments for genuinely simple portfolio or presentation websites.
 ```
 
 To use OpenAI for the batch digest only, set:

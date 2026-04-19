@@ -20,10 +20,11 @@ MIN_LEAD_SCORE = int(os.getenv("MIN_LEAD_SCORE", "70"))
 SUMMARY_INTERVAL_HOURS = float(os.getenv("SUMMARY_INTERVAL_HOURS", "3"))
 SUMMARY_TOP_N = int(os.getenv("SUMMARY_TOP_N", "5"))
 DEFAULT_LEAD_PREFERENCES = (
-    "Recommend small paid web projects from free-contact sources worth replying to quickly. "
-    "Prefer presentation websites, portfolios, landing pages, WordPress, simple CMS, "
-    "booking systems, and clear client requests. Avoid e-shops, Shoptet, SEO-only work, "
-    "graphics-only work, full-time jobs, and listings where contacting the client requires a paid credit or subscription."
+    "Recommend paid custom website projects from free-contact sources. Prefer people who clearly want a website, "
+    "full custom web, presentation website, business website, landing page, or simple portfolio. "
+    "Reject WordPress, WP, e-shops, Shoptet, SEO-only work, graphics-only work, full-time jobs, "
+    "and listings where contacting the client requires a paid credit or subscription. "
+    "Prefer good budgets, but accept lower payments for genuinely simple portfolio or presentation websites."
 )
 LEAD_PREFERENCES = os.getenv("LEAD_PREFERENCES") or DEFAULT_LEAD_PREFERENCES
 
@@ -37,8 +38,6 @@ INCLUDE_KEYWORDS = [
     "portfolio",
     "prezentace",
     "prezentační web",
-    "wordpress",
-    "wp",
     "webař",
     "webaře",
     "webdesigner",
@@ -54,6 +53,8 @@ EXCLUDE_KEYWORDS = [
     "eshop",
     "e-shop",
     "shoptet",
+    "wordpress",
+    "wp",
     "seo only",
     "jen seo",
     "pouze seo",

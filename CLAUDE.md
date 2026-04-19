@@ -4,7 +4,7 @@ Scrapes free-contact Czech freelance/job sources for web dev leads and sends dig
 
 ## Goal
 
-Get a ranked digest every few hours when someone posts a request for web dev work (portfolio sites, small presentation webs, WordPress, etc.) on Czech platforms. Replace manual checking of these boards without using paid-contact lead marketplaces.
+Get a ranked digest every few hours when someone posts a request for web dev work (portfolio sites, small presentation webs, custom websites, etc.) on Czech platforms. Replace manual checking of these boards without using paid-contact lead marketplaces.
 
 ## Sources to Scrape
 
@@ -25,13 +25,13 @@ Match posts containing any of (case-insensitive, also check Czech diacritics var
 
 - `web`, `webové stránky`, `webovka`, `webovky`
 - `portfolio`, `prezentace`, `prezentační web`
-- `wordpress`, `wp`
 - `webař`, `webaře`, `webdesigner`, `webdesignér`
 - `landing page`, `jednoduchý web`, `osobní web`
 - `tvorba webu`, `tvorba stránek`
 
 **Exclude** (negative filter, skip post if matches):
 - `eshop`, `e-shop`, `shoptet` (user is NOT doing e-shops right now)
+- `wordpress`, `wp` (user is NOT doing WordPress work)
 - `SEO only`, `jen SEO`, `pouze SEO`
 - `grafik`, `grafika` (unless also mentions web)
 

@@ -44,7 +44,7 @@ def matches_keywords(text: str) -> bool:
         keyword = _normalize(kw)
         if keyword in {"grafik", "grafika"}:
             if keyword in normalized and not any(
-                term in normalized for term in ["web", "wordpress", "webdesign"]
+                term in normalized for term in ["web", "webdesign"]
             ):
                 return False
             continue

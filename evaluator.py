@@ -91,7 +91,8 @@ def local_evaluate_lead(post: Post) -> LeadEvaluation:
             "webovych stranek",
             "prezentacni web",
             "landing page",
-            "wordpress",
+            "firemni web",
+            "firemni stranky",
         ],
     ):
         score += 30
@@ -100,7 +101,18 @@ def local_evaluate_lead(post: Post) -> LeadEvaluation:
         score += 15
         reasons.append("relevant web keyword")
 
-    if _contains_any(text, ["jednoduchy web", "webova prezentace", "rezervacni system"]):
+    simple_scope = _contains_any(
+        text,
+        [
+            "jednoduchy web",
+            "webova prezentace",
+            "prezentacni web",
+            "portfolio",
+            "osobni web",
+            "landing page",
+        ],
+    )
+    if simple_scope:
         score += 10
         reasons.append("fits small site work")
 
@@ -111,26 +123,36 @@ def local_evaluate_lead(post: Post) -> LeadEvaluation:
     amounts = _money_values(text)
     if amounts:
         best_amount = max(amounts)
-        if best_amount >= 30000:
+        if best_amount >= 50000:
             score += 20
-            reasons.append("solid stated budget")
-        elif best_amount >= 8000:
+            reasons.append("strong stated budget")
+        elif best_amount >= 25000:
+            score += 15
+            reasons.append("good stated budget")
+        elif simple_scope and best_amount >= 8000:
             score += 10
-            reasons.append("some stated budget")
+            reasons.append("acceptable simple-site budget")
+        elif best_amount < 8000:
+            score -= 15
+            reasons.append("low stated budget")
 
     if _contains_any(text, ["urgentne", "urgentně", "co nejdrive", "co nejdříve"]):
         score += 8
         reasons.append("time-sensitive request")
 
     if _contains_any(text, ["eshop", "e-shop", "shoptet"]):
-        score -= 35
+        score -= 45
         reasons.append("includes e-shop scope")
+
+    if _contains_any(text, ["wordpress", "word press", "wp"]):
+        score -= 45
+        reasons.append("WordPress request")
 
     if _contains_any(text, ["seo only", "jen seo", "pouze seo"]):
         score -= 35
         reasons.append("SEO-only request")
 
-    if _contains_any(text, ["grafik", "grafika"]) and not _contains_any(text, ["web", "wordpress"]):
+    if _contains_any(text, ["grafik", "grafika"]) and not _contains_any(text, ["web", "webdesign"]):
         score -= 25
         reasons.append("graphics-only signal")
 
