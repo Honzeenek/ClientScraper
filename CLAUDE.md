@@ -12,10 +12,11 @@ Get a ranked digest every few hours when someone posts a request for web dev wor
 |---|---|---|---|
 | Reddit (r/czech, r/Prague, r/Jobs4Bitcoins, r/forhire) | Official API (PRAW) | High | Use when API credentials work |
 | Workero.cz | HTML scrape (BeautifulSoup) | High | Free-contact source if public project listings are live |
+| Poptavky.cz | HTML scrape (BeautifulSoup) | Medium | Paid-contact exception, only worth it for stronger leads |
 | Jobs.cz (freelance / ICO / web query) | HTML scrape | Medium | Free application flow, mostly employment-like |
 | Na volné noze | Not scraped | Low | Directory/community, not a public project feed |
 
-**Do NOT scrape paid-contact lead marketplaces.** Avoid sources where viewing or contacting the client requires paid credits or a subscription.
+**Do NOT scrape paid-contact lead marketplaces by default.** Poptavky.cz is the one exception because some leads may be worth paying for. Avoid other sources where viewing or contacting the client requires paid credits or a subscription.
 
 **Do NOT scrape Facebook groups.** FB blocks scrapers, requires login, violates ToS, accounts get banned. Not worth it.
 

@@ -32,7 +32,7 @@ Tune the digest with:
 ```env
 SUMMARY_INTERVAL_HOURS=3
 SUMMARY_TOP_N=5
-LEAD_PREFERENCES=Recommend paid custom website projects from free-contact sources. Prefer people who clearly want a website, full custom web, presentation website, business website, landing page, or simple portfolio. Reject WordPress, WP, e-shops, Shoptet, SEO-only work, graphics-only work, full-time jobs, and listings where contacting the client requires a paid credit or subscription. Prefer good budgets, but accept lower payments for genuinely simple portfolio or presentation websites.
+LEAD_PREFERENCES=Recommend paid custom website projects from free-contact sources. Prefer people who clearly want a website, full custom web, presentation website, business website, landing page, or simple portfolio. Reject WordPress, WP, e-shops, Shoptet, SEO-only work, graphics-only work, full-time jobs, and listings where contacting the client requires a paid credit or subscription, except Poptavky.cz if the lead looks high-value. Prefer good budgets, but accept lower payments for genuinely simple portfolio or presentation websites.
 ```
 
 To use OpenAI for the batch digest only, set:
@@ -56,7 +56,7 @@ OpenAI is only used when the digest is due. The scraper still collects leads eve
 
 - Each scraper fetches recent posts, filters by the include/exclude keyword lists in `config.py`, and stores new matches as lead candidates.
 - Every `SUMMARY_INTERVAL_HOURS`, the bot evaluates unreported candidates and sends one Telegram digest with the best options.
-- Paid-contact marketplaces are not active sources. Current active non-Reddit sources are `workero.cz` and `jobs.cz`.
+- Paid-contact marketplaces are not active sources by default. `poptavky.cz` is the one paid-contact exception because stronger leads there may be worth it. Current active non-Reddit sources are `workero.cz`, `poptavky.cz`, and `jobs.cz`.
 - Na volné noze is not scraped right now because it is a freelancer directory/community, not a public project feed.
 - `seen.db` (SQLite) dedupes by post id so you only get pinged once per lead. Actions commits the db back to the repo each run.
 - Diacritics are normalized before matching so `webař` also matches `webar`.

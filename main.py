@@ -8,6 +8,7 @@ from evaluator import local_evaluate_lead, summarize_candidates
 from notifier.telegram import send_digest
 from scrapers.base import BaseScraper
 from scrapers.jobs_cz import JobsCzScraper
+from scrapers.poptavky import PoptavkyScraper
 from scrapers.reddit import RedditScraper
 from scrapers.workero import WorkeroScraper
 from storage.seen import SeenStore
@@ -26,6 +27,7 @@ def build_scrapers() -> list[BaseScraper]:
     scrapers.extend(
         [
             WorkeroScraper(),
+            PoptavkyScraper(),
             JobsCzScraper(),
         ]
     )
