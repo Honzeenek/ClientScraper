@@ -1,4 +1,4 @@
-# Setup Guide — Get It Running
+# Setup Guide - Get It Running
 
 Follow these steps in order. Budget ~30 minutes total.
 
@@ -94,7 +94,7 @@ You should see the message in Telegram within a few seconds. If it fails, rechec
 python3 main.py
 ```
 
-Expected output: one log line per scraper with `fetched=N matched=M notified=K`. The first run may notify a handful of leads if the filter matches anything recent. A `seen.db` file will appear.
+Expected output: one log line per scraper with `fetched=N matched=M collected=K`. A `seen.db` file will appear. New leads are stored there for the next digest instead of being sent one by one.
 
 Run it again immediately:
 
@@ -102,18 +102,18 @@ Run it again immediately:
 python3 main.py
 ```
 
-All `notified=0` this time because dedup kicked in. Good.
+All `collected=0` this time because dedup kicked in. Good.
 
 ## 8. Tune the HTML scrapers (important)
 
-The 4 HTML scrapers (`poptavka`, `hyperpoptavka`, `nejremeslnici`, `jobs_cz`) use generic CSS selectors. If you see `fetched=0` for any of them, their real HTML differs from my guess. To fix:
+The active free-contact HTML scrapers (`workero`, `jobs_cz`) use generic CSS selectors. If you see `fetched=0` for any of them, their real HTML may differ from the current parser. To fix:
 
 1. Open the listing URL in your browser (they're at the top of each `scrapers/*.py`).
 2. Right-click a listing, **Inspect**. Find the wrapper element and note its tag + class, e.g. `<div class="demand-card">`.
 3. In the scraper file, replace the `soup.select("...")` line with a selector targeting that class, e.g. `soup.select("div.demand-card")`.
 4. Re-run `python3 main.py` and check counts.
 
-If you don't want to tune them right now, skip this — Reddit alone will still work.
+If you don't want to tune them right now, skip this. Reddit or Jobs.cz can still work.
 
 ## 9. Push to GitHub
 
@@ -137,12 +137,20 @@ git push -u origin main
 On the repo page:
 
 1. **Settings → Secrets and variables → Actions → New repository secret**
-2. Add all 5, one at a time, same names and values as your `.env`:
+2. Add the Telegram secrets, and Reddit secrets if you use Reddit later:
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_CHAT_ID`
    - `REDDIT_CLIENT_ID`
    - `REDDIT_CLIENT_SECRET`
    - `REDDIT_USER_AGENT`
+3. If you enable AI summaries, add `OPENAI_API_KEY` as a secret.
+4. Optional repository variables:
+   - `AI_EVALUATION_ENABLED`
+   - `OPENAI_MODEL`
+   - `MIN_LEAD_SCORE`
+   - `SUMMARY_INTERVAL_HOURS`
+   - `SUMMARY_TOP_N`
+   - `LEAD_PREFERENCES`
 
 ## 11. Enable write permissions for Actions
 
@@ -157,11 +165,11 @@ This lets the workflow commit `seen.db` back after each run.
 
 1. **Actions** tab → **scrape** workflow (left sidebar) → **Run workflow** → **Run workflow**.
 2. Wait ~1 minute, refresh, click into the run. Check the logs look the same as your local run.
-3. Look at the repo's commits — you should see `update seen.db [skip ci]` from `github-actions[bot]`.
+3. Look at the repo's commits. You should see `update seen.db [skip ci]` from `github-actions[bot]`.
 
 ## 13. Done
 
-From here, GitHub Actions runs every 30 minutes automatically. You'll get Telegram pings when new matching posts appear.
+From here, GitHub Actions runs every 30 minutes automatically. New matching posts are collected into `seen.db`, and Telegram sends a ranked digest every 3 hours by default.
 
 ## Troubleshooting
 

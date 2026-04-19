@@ -40,8 +40,16 @@ def _normalize(text: str) -> str:
 
 def matches_keywords(text: str) -> bool:
     normalized = _normalize(text)
-    if any(_normalize(kw) in normalized for kw in EXCLUDE_KEYWORDS):
-        return False
+    for kw in EXCLUDE_KEYWORDS:
+        keyword = _normalize(kw)
+        if keyword in {"grafik", "grafika"}:
+            if keyword in normalized and not any(
+                term in normalized for term in ["web", "wordpress", "webdesign"]
+            ):
+                return False
+            continue
+        if keyword in normalized:
+            return False
     return any(_normalize(kw) in normalized for kw in INCLUDE_KEYWORDS)
 
 

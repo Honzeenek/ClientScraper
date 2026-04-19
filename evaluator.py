@@ -8,7 +8,14 @@ from dataclasses import dataclass
 
 import requests
 
-from config import AI_EVALUATION_ENABLED, OPENAI_API_KEY, OPENAI_MODEL
+from config import (
+    AI_EVALUATION_ENABLED,
+    LEAD_PREFERENCES,
+    MIN_LEAD_SCORE,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+    SUMMARY_TOP_N,
+)
 from scrapers.base import Post
 
 log = logging.getLogger(__name__)
@@ -22,6 +29,23 @@ class LeadEvaluation:
     verdict: str
     reason: str
     next_step: str
+
+
+@dataclass
+class DigestItem:
+    id: str
+    title: str
+    source: str
+    url: str
+    score: int
+    reason: str
+    next_step: str
+
+
+@dataclass
+class LeadDigest:
+    summary: str
+    items: list[DigestItem]
 
 
 def _normalize(text: str) -> str:
@@ -94,6 +118,10 @@ def local_evaluate_lead(post: Post) -> LeadEvaluation:
             score += 10
             reasons.append("some stated budget")
 
+    if _contains_any(text, ["urgentne", "urgentně", "co nejdrive", "co nejdříve"]):
+        score += 8
+        reasons.append("time-sensitive request")
+
     if _contains_any(text, ["eshop", "e-shop", "shoptet"]):
         score -= 35
         reasons.append("includes e-shop scope")
@@ -117,54 +145,103 @@ def local_evaluate_lead(post: Post) -> LeadEvaluation:
     score = max(0, min(100, score))
     verdict = _verdict(score)
     reason = ", ".join(reasons[:3]) if reasons else "basic keyword match"
-    next_step = "Reply quickly with a short offer and one relevant example."
+    next_step = "Open it and reply with one relevant example if the scope still fits."
     if verdict == "low":
-        next_step = "Probably skip unless the title is unusually relevant."
+        next_step = "Skip unless the title is unusually relevant."
     return LeadEvaluation(score=score, verdict=verdict, reason=reason, next_step=next_step)
 
 
 def evaluate_lead(post: Post) -> LeadEvaluation:
-    fallback = local_evaluate_lead(post)
-    if not AI_EVALUATION_ENABLED or not OPENAI_API_KEY:
+    return local_evaluate_lead(post)
+
+
+def summarize_candidates(candidates: list) -> LeadDigest:
+    fallback = local_summarize_candidates(candidates)
+    if not AI_EVALUATION_ENABLED or not OPENAI_API_KEY or not candidates:
         return fallback
     try:
-        return _openai_evaluate_lead(post, fallback)
+        return _openai_summarize_candidates(candidates, fallback)
     except Exception as exc:
-        log.warning("AI evaluation failed for %s: %s", post.url, exc)
+        log.warning("OpenAI summary failed: %s", exc)
         return fallback
 
 
-def _openai_evaluate_lead(post: Post, fallback: LeadEvaluation) -> LeadEvaluation:
-    body = " ".join(post.body.split())[:2500]
+def local_summarize_candidates(candidates: list) -> LeadDigest:
+    ranked = sorted(candidates, key=lambda item: item.local_score, reverse=True)
+    items = [
+        DigestItem(
+            id=item.id,
+            title=item.title,
+            source=item.source,
+            url=item.url,
+            score=item.local_score,
+            reason=item.local_reason,
+            next_step="Open and reply if the budget and scope still fit.",
+        )
+        for item in ranked
+        if item.local_score >= MIN_LEAD_SCORE
+    ][:SUMMARY_TOP_N]
+    if items:
+        summary = f"{len(candidates)} new matches collected. Top {len(items)} look worth checking."
+    else:
+        summary = f"{len(candidates)} new matches collected, but none reached the score threshold."
+    return LeadDigest(summary=summary, items=items)
+
+
+def _openai_summarize_candidates(candidates: list, fallback: LeadDigest) -> LeadDigest:
+    ranked = sorted(candidates, key=lambda item: item.local_score, reverse=True)[:25]
+    allowed_ids = {item.id for item in ranked}
+    candidate_text = "\n\n".join(
+        (
+            f"ID: {item.id}\n"
+            f"Source: {item.source}\n"
+            f"Local score: {item.local_score}\n"
+            f"Local reason: {item.local_reason}\n"
+            f"Title: {item.title}\n"
+            f"Body: {' '.join(item.body.split())[:900]}\n"
+            f"URL: {item.url}"
+        )
+        for item in ranked
+    )
     payload = {
         "model": OPENAI_MODEL,
         "instructions": (
-            "Evaluate whether this Czech lead is worth pursuing for a solo web developer. "
-            "Prefer small presentation websites, portfolio sites, landing pages, WordPress, "
-            "simple CMS, and booking sites. Penalize e-shops, Shoptet, SEO-only work, "
-            "graphics-only work, and full-time employment. Return concise JSON."
+            "You evaluate batches of Czech web development leads for a solo developer. "
+            "The user wants fewer notifications and only wants opportunities worth checking. "
+            f"User preferences: {LEAD_PREFERENCES} "
+            "Recommend only leads from sources where contacting the client is free or normal job application is free. "
+            "Pick at most the strongest leads. Return JSON."
         ),
         "input": (
-            f"Source: {post.source}\n"
-            f"Title: {post.title}\n"
-            f"Body: {body}\n"
-            f"Local score: {fallback.score}\n"
-            f"Local reason: {fallback.reason}"
+            f"Minimum score to recommend: {MIN_LEAD_SCORE}\n"
+            f"Maximum recommended items: {SUMMARY_TOP_N}\n"
+            f"Candidates:\n{candidate_text}"
         ),
         "text": {
             "format": {
                 "type": "json_schema",
-                "name": "lead_evaluation",
+                "name": "lead_digest",
                 "strict": True,
                 "schema": {
                     "type": "object",
                     "properties": {
-                        "score": {"type": "integer"},
-                        "verdict": {"type": "string", "enum": ["high", "medium", "low"]},
-                        "reason": {"type": "string"},
-                        "next_step": {"type": "string"},
+                        "summary": {"type": "string"},
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {"type": "string"},
+                                    "score": {"type": "integer"},
+                                    "reason": {"type": "string"},
+                                    "next_step": {"type": "string"},
+                                },
+                                "required": ["id", "score", "reason", "next_step"],
+                                "additionalProperties": False,
+                            },
+                        },
                     },
-                    "required": ["score", "verdict", "reason", "next_step"],
+                    "required": ["summary", "items"],
                     "additionalProperties": False,
                 },
             }
@@ -177,18 +254,36 @@ def _openai_evaluate_lead(post: Post, fallback: LeadEvaluation) -> LeadEvaluatio
             "Content-Type": "application/json",
         },
         json=payload,
-        timeout=30,
+        timeout=45,
     )
     resp.raise_for_status()
     data = _extract_response_json(resp.json())
-    score = max(0, min(100, int(data["score"])))
-    verdict = data["verdict"] if data["verdict"] in {"high", "medium", "low"} else _verdict(score)
-    return LeadEvaluation(
-        score=score,
-        verdict=verdict,
-        reason=str(data["reason"])[:180],
-        next_step=str(data["next_step"])[:180],
-    )
+    by_id = {item.id: item for item in ranked}
+    items = []
+    for raw in data.get("items", []):
+        item_id = raw.get("id")
+        if item_id not in allowed_ids:
+            continue
+        candidate = by_id[item_id]
+        score = max(0, min(100, int(raw.get("score", candidate.local_score))))
+        if score < MIN_LEAD_SCORE:
+            continue
+        items.append(
+            DigestItem(
+                id=candidate.id,
+                title=candidate.title,
+                source=candidate.source,
+                url=candidate.url,
+                score=score,
+                reason=str(raw.get("reason", candidate.local_reason))[:180],
+                next_step=str(raw.get("next_step", "Open and review."))[:180],
+            )
+        )
+        if len(items) >= SUMMARY_TOP_N:
+            break
+    if not items and fallback.items:
+        return fallback
+    return LeadDigest(summary=str(data.get("summary", fallback.summary))[:240], items=items)
 
 
 def _extract_response_json(data: dict) -> dict:

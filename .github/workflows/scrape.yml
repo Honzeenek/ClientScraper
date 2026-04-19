@@ -34,6 +34,9 @@ jobs:
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
           MIN_LEAD_SCORE: ${{ vars.MIN_LEAD_SCORE || '70' }}
+          SUMMARY_INTERVAL_HOURS: ${{ vars.SUMMARY_INTERVAL_HOURS || '3' }}
+          SUMMARY_TOP_N: ${{ vars.SUMMARY_TOP_N || '5' }}
+          LEAD_PREFERENCES: ${{ vars.LEAD_PREFERENCES || 'Recommend small paid web projects from free-contact sources worth replying to quickly. Avoid e-shops, SEO-only work, graphics-only work, full-time jobs, and paid-contact marketplaces.' }}
           AI_EVALUATION_ENABLED: ${{ vars.AI_EVALUATION_ENABLED || 'false' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5-mini' }}

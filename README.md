@@ -1,6 +1,6 @@
 # Lead Scraper Bot
 
-Scrapes Czech freelance/job boards (Reddit, Poptavka.cz, Hyperpoptavka.cz, Nejremeslnici.cz, Jobs.cz) for web-dev leads and pushes matches to Telegram. Runs free on GitHub Actions every 30 minutes.
+Scrapes free-contact Czech freelance/job sources for web-dev leads, stores new matches, and sends a ranked Telegram digest every few hours. Runs free on GitHub Actions every 30 minutes.
 
 ## Local setup
 
@@ -23,11 +23,19 @@ Scrapes Czech freelance/job boards (Reddit, Poptavka.cz, Hyperpoptavka.cz, Nejre
 2. Copy the client id (under the app name) to `REDDIT_CLIENT_ID`, the secret to `REDDIT_CLIENT_SECRET`.
 3. Set `REDDIT_USER_AGENT` to something like `lead-scraper by /u/yourusername`.
 
-### Optional AI evaluation
+### Digest evaluation
 
-The bot always scores leads locally. Set `MIN_LEAD_SCORE` to control what gets sent to Telegram. The default is `55`.
+The bot always scores leads locally as it scrapes. Set `MIN_LEAD_SCORE` to control what can be recommended in the digest. The default is `70`.
 
-To add AI reasoning, set:
+Tune the digest with:
+
+```env
+SUMMARY_INTERVAL_HOURS=3
+SUMMARY_TOP_N=5
+LEAD_PREFERENCES=Recommend small paid web projects from free-contact sources worth replying to quickly. Prefer presentation websites, portfolios, landing pages, WordPress, simple CMS, booking systems, and clear client requests. Avoid e-shops, Shoptet, SEO-only work, graphics-only work, full-time jobs, and listings where contacting the client requires a paid credit or subscription.
+```
+
+To use OpenAI for the batch digest only, set:
 
 ```env
 AI_EVALUATION_ENABLED=true
@@ -35,19 +43,21 @@ OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-5-mini
 ```
 
-AI evaluation uses the OpenAI Responses API and returns a score, reason, and suggested next step. If the API fails, the bot falls back to local scoring.
+OpenAI is only used when the digest is due. The scraper still collects leads every run and falls back to local scoring if the API is unavailable.
 
 ## GitHub Actions
 
 1. Push this repo to GitHub.
-2. In **Settings → Secrets and variables → Actions**, add the Telegram and Reddit env vars as repo secrets. If using AI evaluation, add `OPENAI_API_KEY` as a secret and add `AI_EVALUATION_ENABLED`, `OPENAI_MODEL`, and `MIN_LEAD_SCORE` as repository variables.
+2. In **Settings → Secrets and variables → Actions**, add the Telegram and Reddit env vars as repo secrets. If using OpenAI summaries, add `OPENAI_API_KEY` as a secret. Add `AI_EVALUATION_ENABLED`, `OPENAI_MODEL`, `MIN_LEAD_SCORE`, `SUMMARY_INTERVAL_HOURS`, `SUMMARY_TOP_N`, and `LEAD_PREFERENCES` as repository variables if you want to override the defaults.
 3. In **Settings → Actions → General**, make sure **Workflow permissions** is set to **Read and write permissions** so the job can commit `seen.db` back.
 4. The workflow `scrape.yml` runs every 30 minutes. Trigger manually from the Actions tab to smoke-test.
 
 ## How it works
 
-- Each scraper fetches recent posts, filters by the include/exclude keyword lists in `config.py`, and passes matches to the notifier.
-- Each new match is scored before notification. Low-scoring leads are marked seen and skipped.
+- Each scraper fetches recent posts, filters by the include/exclude keyword lists in `config.py`, and stores new matches as lead candidates.
+- Every `SUMMARY_INTERVAL_HOURS`, the bot evaluates unreported candidates and sends one Telegram digest with the best options.
+- Paid-contact marketplaces are not active sources. Current active non-Reddit sources are `workero.cz` and `jobs.cz`.
+- Na volné noze is not scraped right now because it is a freelancer directory/community, not a public project feed.
 - `seen.db` (SQLite) dedupes by post id so you only get pinged once per lead. Actions commits the db back to the repo each run.
 - Diacritics are normalized before matching so `webař` also matches `webar`.
 
@@ -55,5 +65,7 @@ AI evaluation uses the OpenAI Responses API and returns a score, reason, and sug
 
 - Keywords live in `config.py` (`INCLUDE_KEYWORDS`, `EXCLUDE_KEYWORDS`).
 - Lead scoring threshold is `MIN_LEAD_SCORE`.
+- Digest cadence is `SUMMARY_INTERVAL_HOURS`; digest size is `SUMMARY_TOP_N`.
+- Recommendation preferences live in `LEAD_PREFERENCES`.
 - Subreddits in `REDDIT_SUBREDDITS`.
 - HTML scrapers use generic selectors; if any source stops returning results, inspect the listing page and refine the CSS selector in the corresponding `scrapers/*.py`.

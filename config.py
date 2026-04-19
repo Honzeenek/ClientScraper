@@ -17,6 +17,15 @@ AI_EVALUATION_ENABLED = os.getenv("AI_EVALUATION_ENABLED", "").casefold() in {
     "on",
 }
 MIN_LEAD_SCORE = int(os.getenv("MIN_LEAD_SCORE", "70"))
+SUMMARY_INTERVAL_HOURS = float(os.getenv("SUMMARY_INTERVAL_HOURS", "3"))
+SUMMARY_TOP_N = int(os.getenv("SUMMARY_TOP_N", "5"))
+DEFAULT_LEAD_PREFERENCES = (
+    "Recommend small paid web projects from free-contact sources worth replying to quickly. "
+    "Prefer presentation websites, portfolios, landing pages, WordPress, simple CMS, "
+    "booking systems, and clear client requests. Avoid e-shops, Shoptet, SEO-only work, "
+    "graphics-only work, full-time jobs, and listings where contacting the client requires a paid credit or subscription."
+)
+LEAD_PREFERENCES = os.getenv("LEAD_PREFERENCES") or DEFAULT_LEAD_PREFERENCES
 
 REDDIT_SUBREDDITS = ["czech", "Prague", "brno", "forhire"]
 

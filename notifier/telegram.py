@@ -3,7 +3,7 @@ import logging
 import requests
 
 from config import SNIPPET_LENGTH, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
-from evaluator import LeadEvaluation
+from evaluator import LeadDigest, LeadEvaluation
 from scrapers.base import Post
 
 log = logging.getLogger(__name__)
@@ -56,4 +56,44 @@ def send_lead(post: Post, evaluation: LeadEvaluation | None = None) -> None:
     )
     if not resp.ok:
         log.error("Telegram send failed: %s %s", resp.status_code, resp.text)
+        resp.raise_for_status()
+
+
+def send_digest(digest: LeadDigest) -> None:
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        log.warning("Telegram not configured, skipping digest")
+        return
+
+    lines = [
+        "*Lead digest*",
+        _escape(digest.summary),
+    ]
+    if digest.items:
+        for index, item in enumerate(digest.items, start=1):
+            lines.extend(
+                [
+                    "",
+                    f"*{index}\\. {_escape(item.title)}*",
+                    f"{_escape(item.source)} · {_escape(str(item.score))}/100",
+                    f"{_escape(item.reason)}",
+                    f"{_escape(item.next_step)}",
+                    f"[Open post]({item.url})",
+                ]
+            )
+    else:
+        lines.append("Nothing looks worth chasing in this batch\\.")
+    body = "\n".join(lines)
+
+    resp = requests.post(
+        API_URL.format(token=TELEGRAM_BOT_TOKEN),
+        json={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": body,
+            "parse_mode": "MarkdownV2",
+            "disable_web_page_preview": True,
+        },
+        timeout=15,
+    )
+    if not resp.ok:
+        log.error("Telegram digest failed: %s %s", resp.status_code, resp.text)
         resp.raise_for_status()

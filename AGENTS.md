@@ -1,20 +1,21 @@
 # Lead Scraper Bot
 
-Scrapes Czech freelance/job boards for web dev leads and sends notifications to Telegram.
+Scrapes free-contact Czech freelance/job sources for web dev leads and sends digest notifications to Telegram.
 
 ## Goal
 
-Get notified within ~30 minutes when someone posts a request for web dev work (portfolio sites, small presentation webs, WordPress, etc.) on Czech platforms. Replace manual checking of these boards.
+Get a ranked digest every few hours when someone posts a request for web dev work (portfolio sites, small presentation webs, WordPress, etc.) on Czech platforms. Replace manual checking of these boards without using paid-contact lead marketplaces.
 
 ## Sources to Scrape
 
 | Source | Method | Priority | Notes |
 |---|---|---|---|
-| Reddit (r/czech, r/Prague, r/Jobs4Bitcoins, r/forhire) | Official API (PRAW) | High | Easiest, most reliable |
-| Poptavka.cz | HTML scrape (BeautifulSoup) | High | Check for RSS first |
-| Hyperpoptavka.cz | HTML scrape | High | Check for RSS first |
-| Nejremeslnici.cz | HTML scrape | Medium | Public listings |
-| Jobs.cz (freelance section) | HTML scrape | Medium | Structured HTML |
+| Reddit (r/czech, r/Prague, r/Jobs4Bitcoins, r/forhire) | Official API (PRAW) | High | Use when API credentials work |
+| Workero.cz | HTML scrape (BeautifulSoup) | High | Free-contact source if public project listings are live |
+| Jobs.cz (freelance / ICO / web query) | HTML scrape | Medium | Free application flow, mostly employment-like |
+| Na volné noze | Not scraped | Low | Directory/community, not a public project feed |
+
+**Do NOT scrape paid-contact lead marketplaces.** Avoid sources where viewing or contacting the client requires paid credits or a subscription.
 
 **Do NOT scrape Facebook groups.** FB blocks scrapers, requires login, violates ToS, accounts get banned. Not worth it.
 
@@ -36,12 +37,12 @@ Match posts containing any of (case-insensitive, also check Czech diacritics var
 
 ## Output / Notification
 
-- **Telegram bot** (free, instant). Send each new matching post as a message with:
-  - Title
+- **Telegram bot** (free). Send one ranked digest every few hours with:
+  - Best lead titles
   - Source platform
-  - Short snippet (first 200 chars)
+  - Score and short reason
+  - Suggested next step
   - Direct link to post
-  - Timestamp
 - Format as markdown for clickable links in Telegram.
 
 ## Architecture
@@ -53,9 +54,7 @@ lead-scraper/
 │   ├── __init__.py
 │   ├── base.py           # BaseScraper abstract class (fetch, parse, filter)
 │   ├── reddit.py
-│   ├── poptavka.py
-│   ├── hyperpoptavka.py
-│   ├── nejremeslnici.py
+│   ├── workero.py
 │   └── jobs_cz.py
 ├── notifier/
 │   ├── __init__.py
@@ -110,10 +109,10 @@ class Post:
 - Subreddits: `czech`, `Prague`, `brno`, `forhire`, `slevomat` (check which have actual volume)
 - Fetch `.new(limit=50)` from each, filter by keywords
 
-### Poptavka.cz / Hyperpoptavka.cz / Nejremeslnici.cz
+### Workero.cz
 - Check `/robots.txt` first, respect it
 - Look for RSS feed first (`/rss`, `/feed`, view page source for `<link rel="alternate">`)
-- If no RSS: fetch the web/IT category listing page, parse with BeautifulSoup
+- If no RSS: fetch the public project listing page, parse with BeautifulSoup
 - Set realistic User-Agent header
 - Rate limit: 1 request per 2 seconds minimum, never hammer
 
@@ -150,6 +149,13 @@ TELEGRAM_CHAT_ID=
 REDDIT_CLIENT_ID=
 REDDIT_CLIENT_SECRET=
 REDDIT_USER_AGENT=lead-scraper by /u/yourusername
+MIN_LEAD_SCORE=70
+SUMMARY_INTERVAL_HOURS=3
+SUMMARY_TOP_N=5
+LEAD_PREFERENCES=
+AI_EVALUATION_ENABLED=false
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5-mini
 ```
 
 ## Build Order (MVP first, then expand)
@@ -157,15 +163,13 @@ REDDIT_USER_AGENT=lead-scraper by /u/yourusername
 1. Project skeleton + config.py + Post dataclass + BaseScraper
 2. SQLite dedup storage
 3. Telegram notifier + test message
-4. Reddit scraper (easiest, validates end-to-end flow)
-5. Run locally, verify notifications work
-6. Add Poptavka.cz scraper
-7. Add Hyperpoptavka.cz + Nejremeslnici.cz
-8. Add Jobs.cz
+4. SQLite candidate storage for digest mode
+5. Reddit scraper when credentials work
+6. Add Workero.cz scraper if public project listings are live
+7. Add Jobs.cz scraper
+8. Add batch digest evaluation with optional OpenAI
 9. GitHub Actions workflow
 10. README with setup instructions
-
-**Ship v1 with just Reddit + Poptavka.** Add others once the pipeline is proven.
 
 ## Constraints & Rules
 
@@ -182,4 +186,5 @@ REDDIT_USER_AGENT=lead-scraper by /u/yourusername
 - Auto-replying to posts
 - ML-based relevance scoring (keyword filter is enough)
 - Multi-user support
+- Paid-contact lead marketplaces
 - Scraping FB, LinkedIn, Discord
